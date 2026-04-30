@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* 1. Global Reset & Typography */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden; /* Prevents horizontal scroll jitters during animations */
+}
+
+/* 2. Lenis Essential CSS */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* 3. Animation Helpers */
+.food-perspective {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.reveal-text, .best-seller-card {
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  /* Use will-change sparingly to hint the browser for smoother transforms */
+  will-change: transform, opacity;
+}
+
+/* Instead of visibility: hidden which can be tricky, 
+   we ensure cards are hidden initially. 
+   GSAP's gsap.set({ opacity: 0 }) in the JSX file handles this,
+   but we add this to prevent the "flicker" before JS loads.
+*/
+.best-seller-card {
+  opacity: 0;
+}
+
+/* If you specifically use .food-part or .reveal-text classes elsewhere: */
+.food-part, 
+.reveal-text {
+  opacity: 0;
+}
