@@ -8,15 +8,29 @@ export default function Menu() {
     const [products, setProducts] = useState([]);
     const [activeCategory, setActiveCategory] = useState("pizza"); 
     const [loading, setLoading] = useState(true);
+    const [isSlow, setIsSlow] = useState(false); // Track long wait times
 
     useEffect(() => {
+        // 1. Start a timer to show a "patience" message if it takes > 5 seconds
+        const slowTimer = setTimeout(() => {
+            if (loading) setIsSlow(true);
+        }, 5000);
+
         const fetchProducts = async () => {
+            setLoading(true);
+            
+            // 2. Safety check for the API URL
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+            if (!apiUrl) {
+                console.error("Critical Error: NEXT_PUBLIC_API_URL is not defined.");
+                setLoading(false);
+                return;
+            }
+
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`);
+                const res = await fetch(`${apiUrl}/api/products`);
                 const data = await res.json();
                 
-                // FIX: Ensure we are setting an array even if the API 
-                // wraps the data in an object (e.g., { products: [] })
                 if (Array.isArray(data)) {
                     setProducts(data);
                 } else if (data && typeof data === 'object' && Array.isArray(data.products)) {
@@ -26,14 +40,19 @@ export default function Menu() {
                 }
             } catch (err) { 
                 console.error("Fetch error:", err); 
-                setProducts([]); // Fallback to empty array on error
+                setProducts([]); 
+            } finally { 
+                setLoading(false); 
+                clearTimeout(slowTimer); // Clean up timer
             }
-            finally { setLoading(false); }
         };
+
         fetchProducts();
+
+        // Cleanup on unmount
+        return () => clearTimeout(slowTimer);
     }, []);
 
-    // FIX: Added Array.isArray check to prevent "filter is not a function" error
     const filteredProducts = Array.isArray(products) 
         ? products.filter(p => p.category?.toLowerCase() === activeCategory?.toLowerCase())
         : [];
@@ -58,10 +77,23 @@ export default function Menu() {
                     </h2>
 
                     {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[1,2,3,4,5,6].map(i => (
-                                <div key={i} className="h-80 bg-zinc-900/50 animate-pulse rounded-3xl border border-white/5" />
-                            ))}
+                        /* --- SPINNER SECTION --- */
+                        <div className="flex flex-col items-center justify-center h-96 text-center">
+                            <div className="relative mb-6">
+                                <div className="w-16 h-16 rounded-full border-4 border-red-600/20 border-t-red-600 animate-spin"></div>
+                                <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-b-zinc-400 animate-spin-slow"></div>
+                            </div>
+                            
+                            <p className="text-zinc-500 font-bold uppercase tracking-[0.3em] animate-pulse text-sm">
+                                Preparing the Menu
+                            </p>
+
+                            {/* Show only if Render is taking its sweet time */}
+                            {isSlow && (
+                                <p className="mt-4 text-zinc-600 text-xs max-w-[200px] leading-relaxed italic">
+                                    Our servers are waking up. <br /> Thanks for your patience!
+                                </p>
+                            )}
                         </div>
                     ) : filteredProducts.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -70,15 +102,16 @@ export default function Menu() {
                             ))}
                         </div>
                     ) : (
+                        /* --- EMPTY STATE --- */
                         <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 rounded-[2rem] bg-zinc-900/20">
                             <p className="text-zinc-500 font-medium text-lg">
-                                No <span className="text-white">{activeCategory}</span> available right now.
+                                No <span className="text-white">{activeCategory}</span> found.
                             </p>
                             <button 
                                 onClick={() => setActiveCategory('pizza')}
                                 className="mt-4 text-red-500 text-sm font-bold uppercase tracking-widest hover:text-red-400 transition-colors"
                             >
-                                View All Categories
+                                Reset Filter
                             </button>
                         </div>
                     )}

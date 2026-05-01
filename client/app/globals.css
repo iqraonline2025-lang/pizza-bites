@@ -76,3 +76,12 @@ html.lenis body {
 .reveal-text {
   opacity: 0;
 }
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); } /* Spins opposite direction */
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
