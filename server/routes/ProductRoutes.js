@@ -1,21 +1,28 @@
 import express from 'express';
 import multer from 'multer';
-import fs from 'fs';
-import path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import Product from '../models/Product.js';
 
 const router = express.Router();
 
-const uploadDir = 'uploads';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+// --- CLOUDINARY CONFIG ---
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET
 });
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+// --- CLOUDINARY STORAGE SETUP ---
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'pizza-bites-products', // Name of the folder in your Cloudinary
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+  },
+});
+
+const upload = multer({ storage: storage });
 
 // POST: Add new product
 router.post('/add', upload.single('image'), async (req, res) => {
@@ -28,7 +35,8 @@ router.post('/add', upload.single('image'), async (req, res) => {
       description,
       category,
       subCategory,
-      image: req.file ? `/uploads/${req.file.filename}` : '',
+      // req.file.path is now the full secure URL from Cloudinary
+      image: req.file ? req.file.path : '', 
       variants: parsedVariants,
       settings: { hasMealOption: false, mealPrice: 0 } 
     });
@@ -52,13 +60,9 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       variants: JSON.parse(variants)
     };
 
+    // If a new file is uploaded, req.file.path will be the new Cloudinary URL
     if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
-      const oldProduct = await Product.findById(req.params.id);
-      if (oldProduct?.image) {
-        const oldImagePath = path.join(process.cwd(), oldProduct.image);
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-      }
+      updateData.image = req.file.path;
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
@@ -71,12 +75,8 @@ router.put('/:id', upload.single('image'), async (req, res) => {
 // DELETE: Remove product
 router.delete('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
-    if (product.image) {
-      const imagePath = path.join(process.cwd(), product.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
-    }
+    // Note: To fully delete from Cloudinary as well, you'd need the public_id, 
+    // but for now, this deletes the product from your Database.
     await Product.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (err) {
@@ -97,7 +97,6 @@ router.get('/', async (req, res) => {
 // GET: Sidebar Categories
 router.get('/sidebar-categories', async (req, res) => {
   try {
-    // UPDATED LIST
     const categories = ['pizza', 'burgers', 'wraps', 'pasta', 'sandwich', 'wings', 'drinks', 'family fiesta', 'pizza deals'];
     res.status(200).json(categories);
   } catch (err) {

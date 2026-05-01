@@ -1,16 +1,30 @@
 "use client";
 import { useState } from "react";
-import { useCart } from "../context/CartContext"; // 1. Import the hook
+import { useCart } from "../context/CartContext";
 
 const ProductCard = ({ product }) => {
-  const { addToCart } = useCart(); // 2. Destructure addToCart
+  const { addToCart } = useCart();
   const [selectedVariant, setSelectedVariant] = useState(product.variants[0]);
   const [showModal, setShowModal] = useState(false);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  
+  // Clean up API URL to prevent double slashes
+  const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_URL = rawApiUrl.endsWith("/") ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
-  // 3. Create a helper function to handle adding
+  // --- IMAGE HELPER ---
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "https://placehold.co/600x400/27272a/white?text=No+Image";
+    
+    // If it's a Cloudinary link (starts with http), return it directly
+    if (imagePath.startsWith('http')) return imagePath;
+    
+    // Otherwise, it's an old local path, so prefix with backend URL
+    const formattedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+    return `${API_URL}${formattedPath}`;
+  };
+
   const handleAddToCart = (e) => {
-    if (e) e.stopPropagation(); // Stop modal from opening if clicking "+"
+    if (e) e.stopPropagation();
     addToCart(product, selectedVariant);
     setShowModal(false);
   };
@@ -23,15 +37,14 @@ const ProductCard = ({ product }) => {
       >
         {/* Image */}
         <div className="relative h-44 w-full bg-zinc-800 overflow-hidden">
-          {product.image ? (
-            <img
-              src={`${API_URL}${product.image}`}
-              alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs uppercase font-bold">No Image</div>
-          )}
+          <img
+            src={getImageUrl(product.image)}
+            alt={product.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            onError={(e) => {
+              e.target.src = "https://placehold.co/600x400/27272a/white?text=Pizza+Bites";
+            }}
+          />
         </div>
 
         <div className="p-5 flex flex-col flex-1">
@@ -68,10 +81,9 @@ const ProductCard = ({ product }) => {
                 Rs. {Number(selectedVariant?.price).toFixed(2)}
               </p>
             </div>
-            {/* 4. Update the '+' button to actually add to cart */}
             <div 
               onClick={handleAddToCart}
-              className="bg-orange-500 group-hover:bg-white group-hover:text-orange-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-colors"
+              className="bg-orange-500 group-hover:bg-white group-hover:text-orange-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-colors cursor-pointer"
             >
                 <span className="text-xl font-bold">+</span>
             </div>
@@ -88,7 +100,11 @@ const ProductCard = ({ product }) => {
               className="absolute top-4 right-4 bg-zinc-800/80 text-white w-10 h-10 rounded-full hover:bg-orange-500 transition-colors z-10"
             >✕</button>
 
-            <img src={`${API_URL}${product.image}`} className="w-full h-64 object-cover" alt={product.name} />
+            <img 
+              src={getImageUrl(product.image)} 
+              className="w-full h-64 object-cover" 
+              alt={product.name} 
+            />
             
             <div className="p-8">
               <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">{product.name}</h2>
@@ -116,7 +132,6 @@ const ProductCard = ({ product }) => {
                     <span className="text-[10px] text-zinc-500 font-bold uppercase">Total Price</span>
                     <span className="text-3xl font-black text-orange-500 italic">Rs. {Number(selectedVariant?.price).toFixed(2)}</span>
                 </div>
-                {/* 5. Update Modal button to call handleAddToCart */}
                 <button 
                   className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-orange-500/40 uppercase text-xs"
                   onClick={handleAddToCart}
