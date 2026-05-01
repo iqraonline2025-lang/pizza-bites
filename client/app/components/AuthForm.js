@@ -7,15 +7,29 @@ export default function AuthForm({ onAuthSuccess }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // The only email allowed to access this CMS
+  const AUTHORIZED_EMAIL = "pizzabitesdinga@gmail.com";
+
   // Fallback to localhost if env is missing
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError(""); // Clear error when user starts typing
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // FIXED: Added /api/auth here so it hits the correct backend route
+    // 1. Strict Email Check (Frontend Gatekeeper)
+    if (formData.email.toLowerCase() !== AUTHORIZED_EMAIL.toLowerCase()) {
+      setError("Access Denied: Unauthorized admin email.");
+      setLoading(false);
+      return;
+    }
+
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
     
     try {
@@ -29,17 +43,20 @@ export default function AuthForm({ onAuthSuccess }) {
 
       if (res.ok) {
         if (isLogin) {
+          // Store token and trigger parent success function
           localStorage.setItem("adminToken", data.token);
           onAuthSuccess();
         } else {
-          setIsLogin(true); // Switch to login after successful signup
-          setError("Admin created! Now please log in.");
+          // Switch to login mode after successful signup
+          setIsLogin(true);
+          setError("Admin account created! Please log in now.");
         }
       } else {
+        // Display backend error (e.g., "Invalid credentials" or "Unauthorized")
         setError(data.message || "Authentication failed");
       }
     } catch (err) {
-      setError("Server connection failed");
+      setError("Server connection failed. Is your backend running?");
     } finally {
       setLoading(false);
     }
@@ -53,7 +70,7 @@ export default function AuthForm({ onAuthSuccess }) {
             PIZZA BITES <span className="text-white">CMS</span>
           </h1>
           <p className="text-zinc-500 mt-2 font-bold uppercase text-xs tracking-widest">
-            Admin Portal
+            {isLogin ? "Admin Login" : "Admin Registration"}
           </p>
         </div>
 
@@ -61,14 +78,14 @@ export default function AuthForm({ onAuthSuccess }) {
         <div className="flex bg-black p-1 rounded-xl mb-8 border border-zinc-800">
           <button
             type="button"
-            onClick={() => setIsLogin(true)}
+            onClick={() => { setIsLogin(true); setError(""); }}
             className={`flex-1 py-2 rounded-lg font-bold transition-all ${isLogin ? "bg-orange-500 text-white shadow-lg" : "text-zinc-500"}`}
           >
             Login
           </button>
           <button
             type="button"
-            onClick={() => setIsLogin(false)}
+            onClick={() => { setIsLogin(false); setError(""); }}
             className={`flex-1 py-2 rounded-lg font-bold transition-all ${!isLogin ? "bg-orange-500 text-white shadow-lg" : "text-zinc-500"}`}
           >
             Signup
@@ -77,12 +94,14 @@ export default function AuthForm({ onAuthSuccess }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Email</label>
+            <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Email Address</label>
             <input
               type="email"
-              placeholder="admin@pizzabites.com"
+              name="email"
+              placeholder="pizzabitesdinga@gmail.com"
               className="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white focus:border-orange-500 outline-none transition-all mt-1"
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              value={formData.email}
+              onChange={handleChange}
               required
             />
           </div>
@@ -91,9 +110,11 @@ export default function AuthForm({ onAuthSuccess }) {
             <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Password</label>
             <input
               type="password"
+              name="password"
               placeholder="••••••••"
               className="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white focus:border-orange-500 outline-none transition-all mt-1"
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              value={formData.password}
+              onChange={handleChange}
               required
             />
           </div>
@@ -107,9 +128,9 @@ export default function AuthForm({ onAuthSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-orange-500 hover:text-white transition-all uppercase italic mt-4"
+            className="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-orange-500 hover:text-white transition-all uppercase italic mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Processing..." : isLogin ? "Enter Dashboard" : "Create Admin Account"}
+            {loading ? "Processing..." : isLogin ? "Enter Dashboard" : "Register Admin"}
           </button>
         </form>
       </div>

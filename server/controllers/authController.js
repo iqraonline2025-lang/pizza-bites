@@ -2,10 +2,18 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+// The only allowed admin email
+const AUTHORIZED_ADMIN = "pizzabitesdinga@gmail.com";
+
 // 1. SIGNUP FUNCTION
 export const registerAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // RESTRICTION: Only allow the specific email to sign up
+    if (email.toLowerCase() !== AUTHORIZED_ADMIN.toLowerCase()) {
+      return res.status(403).json({ message: "Unauthorized: Only the primary admin can create an account." });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "Admin already exists" });
@@ -24,10 +32,15 @@ export const registerAdmin = async (req, res) => {
   }
 };
 
-// 2. LOGIN FUNCTION (The one that was missing!)
+// 2. LOGIN FUNCTION
 export const loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // RESTRICTION: Even if they have an account, only allow this email to log in
+    if (email.toLowerCase() !== AUTHORIZED_ADMIN.toLowerCase()) {
+      return res.status(403).json({ message: "Access Denied: Restricted to primary admin." });
+    }
 
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "Admin not found" });
