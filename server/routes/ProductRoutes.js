@@ -17,7 +17,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'pizza-bites-products', // Name of the folder in your Cloudinary
+    folder: 'pizza-bites-products',
     allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
   },
 });
@@ -35,7 +35,7 @@ router.post('/add', upload.single('image'), async (req, res) => {
       description,
       category,
       subCategory,
-      // req.file.path is now the full secure URL from Cloudinary
+      // req.file.path contains the full https://res.cloudinary.com URL
       image: req.file ? req.file.path : '', 
       variants: parsedVariants,
       settings: { hasMealOption: false, mealPrice: 0 } 
@@ -60,7 +60,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       variants: JSON.parse(variants)
     };
 
-    // If a new file is uploaded, req.file.path will be the new Cloudinary URL
+    // Correctly update the image URL if a new file is uploaded
     if (req.file) {
       updateData.image = req.file.path;
     }
@@ -69,38 +69,6 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     res.status(200).json(updatedProduct);
   } catch (err) {
     res.status(400).json({ error: err.message });
-  }
-});
-
-// DELETE: Remove product
-router.delete('/:id', async (req, res) => {
-  try {
-    // Note: To fully delete from Cloudinary as well, you'd need the public_id, 
-    // but for now, this deletes the product from your Database.
-    await Product.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: "Product deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET: All Products
-router.get('/', async (req, res) => {
-  try {
-    const products = await Product.find().sort({ createdAt: -1 });
-    res.status(200).json(products);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET: Sidebar Categories
-router.get('/sidebar-categories', async (req, res) => {
-  try {
-    const categories = ['pizza', 'burgers', 'wraps', 'pasta', 'sandwich', 'wings', 'drinks', 'family fiesta', 'pizza deals'];
-    res.status(200).json(categories);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 });
 
