@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url"; // Required for ES Modules
 import connectDB from "./config/db.js";
-import productRoutes from "./routes/productRoutes.js"; 
+import productRoutes from "./routes/ProductRoutes.js"; 
 import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
