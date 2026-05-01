@@ -3,6 +3,15 @@
 const ProductList = ({ products, onEdit, onDelete }) => {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+  // HELPER: Fixes the broken image path logic
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "https://placehold.co/100";
+    // If it's a Cloudinary link (starts with http), use it directly
+    if (imagePath.startsWith("http")) return imagePath;
+    // If it's an old local file, add the API_URL
+    return `${API_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header for the List */}
@@ -26,11 +35,11 @@ const ProductList = ({ products, onEdit, onDelete }) => {
               key={product._id} 
               className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl flex items-center gap-6 group hover:border-orange-500/30 transition-all"
             >
-              {/* Product Image */}
+              {/* Product Image - NOW FIXED */}
               <div className="w-16 h-16 bg-black rounded-2xl overflow-hidden border border-zinc-800 flex-shrink-0">
                 <img 
-                  src={`${API_URL}${product.image}`} 
-                  alt="" 
+                  src={getImageUrl(product.image)} 
+                  alt={product.name} 
                   className="w-full h-full object-cover" 
                 />
               </div>
@@ -47,18 +56,18 @@ const ProductList = ({ products, onEdit, onDelete }) => {
                 </div>
               </div>
 
-              {/* ACTION BUTTONS: This is what you were looking for */}
+              {/* ACTION BUTTONS */}
               <div className="flex gap-2">
                 <button 
                   onClick={() => onEdit(product)}
-                  className="w-9 h-9 rounded-lg bg-zinc-800 text-blue-400 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all"
+                  className="w-9 h-9 rounded-lg bg-zinc-800 text-blue-400 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all text-[10px] font-bold uppercase"
                   title="Edit"
                 >
                   Edit
                 </button>
                 <button 
                   onClick={() => onDelete(product._id)}
-                  className="w-9 h-9 rounded-lg bg-zinc-800 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                  className="w-9 h-9 rounded-lg bg-zinc-800 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-[10px] font-bold uppercase"
                   title="Delete"
                 >
                   Del
