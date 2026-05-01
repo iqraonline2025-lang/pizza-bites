@@ -24,6 +24,8 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
+// --- GET ROUTES (Fixes the 404 errors) ---
+
 // GET: All Products
 router.get('/', async (req, res) => {
   try {
@@ -34,44 +36,42 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET: Sidebar Categories
+router.get('/sidebar-categories', async (req, res) => {
+  try {
+    // These must match your Schema enum exactly
+    const categories = ['pizza', 'burgers', 'wraps', 'pasta', 'sandwich', 'wings', 'drinks', 'family fiesta', 'pizza deals'];
+    res.status(200).json(categories);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- POST/PUT ROUTES (Handles Cloudinary Uploads) ---
+
 // POST: Add new product
 router.post('/add', upload.single('image'), async (req, res) => {
   try {
     const { name, description, category, subCategory, variants } = req.body;
+    
+    // Safety check for variants
+    const parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
 
-    // 1. Safety check for variants (Prevents JSON.parse crash)
-    let parsedVariants = [];
-    if (variants) {
-      try {
-        parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
-      } catch (parseErr) {
-        return res.status(400).json({ error: "Invalid format for variants." });
-      }
-    }
-
-    // 2. Construct product object
     const newProduct = new Product({
       name,
       description,
       category,
       subCategory,
-      // Use the Cloudinary URL if file exists, else empty string
+      // req.file.path is the SECURE URL from Cloudinary
       image: req.file ? req.file.path : '', 
       variants: parsedVariants,
       settings: { hasMealOption: false, mealPrice: 0 } 
     });
 
     const savedProduct = await newProduct.save();
-    console.log("Product saved successfully:", savedProduct._id);
     res.status(201).json(savedProduct);
-
   } catch (err) {
-    // 3. Log the specific error to Render console so you can debug
-    console.error("BACKEND ERROR ON /ADD:", err);
-    res.status(500).json({ 
-      error: "Internal Server Error", 
-      details: err.message 
-    });
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -85,9 +85,10 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       description,
       category,
       subCategory,
-      variants: variants ? (typeof variants === 'string' ? JSON.parse(variants) : variants) : []
+      variants: typeof variants === 'string' ? JSON.parse(variants) : variants
     };
 
+    // If a new image is uploaded, update the URL
     if (req.file) {
       updateData.image = req.file.path;
     }
@@ -95,13 +96,11 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id, 
       updateData, 
-      { new: true, runValidators: true }
+      { new: true }
     );
     
-    if (!updatedProduct) return res.status(404).json({ error: "Product not found" });
     res.status(200).json(updatedProduct);
   } catch (err) {
-    console.error("BACKEND ERROR ON /UPDATE:", err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -109,8 +108,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
 // DELETE: Remove product
 router.delete('/:id', async (req, res) => {
   try {
-    const deleted = await Product.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ error: "Product not found" });
+    await Product.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
