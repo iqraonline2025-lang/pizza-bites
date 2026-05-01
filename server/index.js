@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
-import { fileURLToPath } from "url"; // Required for ES Modules
+import { fileURLToPath } from "url";
 import connectDB from "./config/db.js";
 import productRoutes from "./routes/ProductRoutes.js"; 
 import authRoutes from './routes/authRoutes.js';
@@ -18,21 +18,42 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Middleware
-app.use(cors());
+// --- CORS CONFIGURATION (ALL 3 DOMAINS) ---
+const allowedOrigins = [
+  "http://localhost:3000",                  // 1. Local Development
+  "https://your-main-domain.com",           // 2. Your Main Custom Domain
+  "https://pizza-bites-virid.vercel.app",         // 3. Vercel Preview Domain
+  process.env.FRONTEND_URL                  // 4. Backup (Set this in Render Dashboard)
+].filter(Boolean); // Clean up empty values
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log("CORS Blocked Origin:", origin); // Helps debugging
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+}));
+
 app.use(express.json());
 
-// --- 1. SERVE UPLOADS FOLDER ---
-// This allows you to see images at http://localhost:5000/uploads/filename.jpg
+// --- SERVE UPLOADS FOLDER ---
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// 2. Use your Routes
+// --- ROUTES ---
 app.use("/api/products", productRoutes);
 app.use('/api/auth', authRoutes);
 
 // Base Route
 app.get("/", (req, res) => {
-  res.send("API is running...");
+  res.send("Pizza Bites API is running...");
 });
 
 // Error Handling
