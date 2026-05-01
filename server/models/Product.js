@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 
 const ProductSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: [true, "Product name is required"] },
   description: { type: String },
   category: { 
     type: String, 
-    required: true, 
-    // UPDATED ENUM
+    required: [true, "Category is required"], 
+    lowercase: true,
     enum: ['pizza', 'burgers', 'wraps', 'pasta', 'sandwich', 'wings', 'drinks', 'family fiesta', 'pizza deals'] 
   },
   subCategory: { type: String }, 
