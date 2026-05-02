@@ -38,9 +38,7 @@ export default function Hero() {
             <Link href="/menu" className="px-12 py-5 bg-white text-black font-black uppercase rounded-full hover:bg-yellow-500 transition-all text-xl shadow-2xl">
               View Menu
             </Link>
-            <Link href="/order" className="px-12 py-5 bg-red-600 text-white font-black uppercase rounded-full hover:bg-red-700 transition-all text-xl shadow-2xl">
-              Order Now
-            </Link>
+           
           </div>
         </motion.div>
       </div>
