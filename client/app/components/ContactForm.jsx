@@ -15,7 +15,7 @@ export default function ContactForm() {
     // 1. REPLACE THIS WITH YOUR ACTUAL NUMBER
     // Format: CountryCode + Number (No +, No spaces, No zeros at start)
     // Example for Pakistan: 923001234567
-    const phoneNumber = "+44 7445449691"; 
+    const phoneNumber = "+923370666000"; 
     
     // 2. Format the message properly for a URL
     const messageBody = `* Inquiry*\n\n` +
