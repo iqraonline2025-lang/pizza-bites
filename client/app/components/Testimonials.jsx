@@ -20,7 +20,7 @@ const reviews = [
   {
     name: "Mike Thompson",
     role: "Verified Customer",
-    text: "Free delivery over £20 actually works. Everything arrived piping hot. Those wings are addictive!",
+    text: "Free delivery over 200 RS actually works. Everything arrived piping hot. Those wings are addictive!",
     stars: 5,
     tag: "Wing Master"
   }
